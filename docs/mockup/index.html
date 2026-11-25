@@ -13,9 +13,9 @@
    PICTURE: the big display, aurora of cuts, sparks, waterfall and heat views
    COLOUR and TYPE: Studio 87 looks A, B, C (Soda Pop accents), Barlow Condensed + JetBrains Mono
    LAYOUT: header, big display with its controls under it, side panel, meters far right */
-:root{--page:#141433;--panel:#1c1c4a;--sub:#26265c;--canvas:#05060d;--line:rgba(255,255,255,.07);--text:#ecebf5;--muted:#a8a4c8;--acc:#FFA600;--good:#02EBBA;--sky:#6CC9F5;--hot:#FF1383;--pur:#A43DFF;--lav:#CD92FE;--title:#E1CBF4;--yel:#FFD100;--selbg:rgba(255,166,0,.16);--selbd:#FFA600;--well:rgba(0,0,0,.28)}
-[data-look=b]{--page:#0b0b0d;--panel:#16171b;--sub:#202127;--canvas:#06080a;--acc:#02EBBA;--selbg:rgba(164,61,255,.22);--selbd:#CD92FE}
-[data-look=c]{--page:#101010;--panel:#1b1b1b;--sub:#262626;--canvas:#070707;--acc:#f2f2f2;--selbg:rgba(255,255,255,.12);--selbd:#fff;--title:#fff;--lav:#d8d8d8}
+:root{--dtop:#0a0820;--glow:164,61,255;--page:#141433;--panel:#1c1c4a;--sub:#26265c;--canvas:#05060d;--line:rgba(255,255,255,.07);--text:#ecebf5;--muted:#a8a4c8;--acc:#FFA600;--good:#02EBBA;--sky:#6CC9F5;--hot:#FF1383;--pur:#A43DFF;--lav:#CD92FE;--title:#E1CBF4;--yel:#FFD100;--selbg:rgba(255,166,0,.16);--selbd:#FFA600;--well:rgba(0,0,0,.28)}
+[data-look=b]{--dtop:#101018;--glow:255,19,131;--page:#0b0b0d;--panel:#16171b;--sub:#202127;--canvas:#06080a;--acc:#02EBBA;--selbg:rgba(164,61,255,.22);--selbd:#CD92FE}
+[data-look=c]{--dtop:#0c0c0c;--glow:255,255,255;--page:#101010;--panel:#1b1b1b;--sub:#262626;--canvas:#070707;--acc:#f2f2f2;--selbg:rgba(255,255,255,.12);--selbd:#fff;--title:#fff;--lav:#d8d8d8}
 *{box-sizing:border-box}
 html,body{margin:0;background:#07070f;color:var(--text);font-family:'Barlow Condensed',system-ui,sans-serif;-webkit-user-select:none;user-select:none}
 body{overflow:auto}
@@ -189,7 +189,7 @@ footer{height:24px;flex:none;display:flex;align-items:center;justify-content:spa
     </div>
     <div id="meters" class="card"><canvas id="mcv"></canvas></div>
    </main>
-   <footer><span>Studio 87 · Softer Paws v2 design mockup</span><span id="size">1300 × 720 · 100%</span></footer>
+   <footer><span>Studio 87 · Softer Paws v2.1 design mockup</span><span id="size">1300 × 720 · 100%</span></footer>
   </div>
   <div class="cheek r" data-tip="Wood cheek. Double click to reset the window to 100%."></div>
  </div>
@@ -234,13 +234,13 @@ class CalmEngine{
   this.fifo=[mk(),mk()];this.acc=[mk(),mk()];this.kfifo=mk();this.outQ=[new Float32Array(H),new Float32Array(H)];this.fill=0;
   this.re=[new Float64Array(N),new Float64Array(N)];this.im=[new Float64Array(N),new Float64Array(N)];this.kre=new Float64Array(N);this.kim=new Float64Array(N);
   const mkK=()=>new Float32Array(K);
-  this.d=[mkK(),mkK()];this.dl=mkK();this.kd=mkK();this.red=[mkK(),mkK()];this.ds=[mkK().fill(-140),mkK().fill(-140)];{const hs=H/this.sr;this.su=Math.exp(-hs/0.006);this.sd=Math.exp(-hs/0.045);}this.gf=[mkK(),mkK()];this.wt=mkK();this.aA=mkK();this.aR=mkK();this.hw=new Int32Array(K);this.tmp=new Float32Array(K);this.pre=new Float64Array(K+1);this.oct=mkK();
+  this.d=[mkK(),mkK()];this.dl=mkK();this.kd=mkK();this.red=[mkK(),mkK()];this.ds=[mkK().fill(-140),mkK().fill(-140)];{const hs=H/this.sr;this.su=Math.exp(-hs/0.015);this.sd=Math.exp(-hs/0.09);}this.gf=[mkK(),mkK()];this.wt=mkK();this.aA=mkK();this.aR=mkK();this.hw=new Int32Array(K);this.tmp=new Float32Array(K);this.pre=new Float64Array(K+1);this.oct=mkK();
   for(let k=0;k<K;k++){const f=Math.max(1,k*this.sr/N);this.oct[k]=Math.max(-5,Math.min(5,Math.log2(f/1000)));}
   this.rev=new Uint32Array(N);const bits=Math.log2(N);for(let i=0;i<N;i++){let r=0;for(let b=0;b<bits;b++)r|=((i>>b)&1)<<(bits-1-b);this.rev[i]=r;}
   this.cs=new Float64Array(N>>1);this.sn=new Float64Array(N>>1);for(let k=0;k<N>>1;k++){this.cs[k]=Math.cos(2*Math.PI*k/N);this.sn[k]=Math.sin(2*Math.PI*k/N);}
   this.bLo=new Float32Array(this.B);this.bHi=new Float32Array(this.B);
   for(let b=0;b<this.B;b++){const f0=20*Math.pow(1000,(b-0.5)/(this.B-1)),f1=20*Math.pow(1000,(b+0.5)/(this.B-1));this.bLo[b]=f0*N/this.sr;this.bHi[b]=f1*N/this.sr;}
-  this.dsw=new Float32Array(K);{const hs=H/this.sr;this.mkC=Math.exp(-hs/0.01);this.mkD=Math.exp(-hs/0.005);this.dsR=Math.exp(-hs/0.06);}
+  this.dsw=new Float32Array(K);this.kwt=new Float32Array(K);for(let k=0;k<K;k++){const f=Math.max(1,k*this.sr/N),h=Math.pow(f/100,4);const sh=1/(1+Math.exp(-Math.log2(f/1500)*3));this.kwt[k]=h/(1+h)*(1+1.512*sh);}{const hs=H/this.sr;this.mkC=Math.exp(-hs/0.01);this.mkD=Math.exp(-hs/0.005);this.dsR=Math.exp(-hs/0.06);}
   this.updW();this.updT();this.updD();this.updDS();
  }
  updDS(){const N=this.N,sr=this.sr,K=this.K,fL=this.p.dsFreq;for(let k=0;k<K;k++){const f=Math.max(1,k*sr/N);let t=Math.log2(f/fL)*2+1;t=t<0?0:t>1?1:t;this.dsw[k]=t*t*(3-2*t);}
@@ -305,9 +305,9 @@ class CalmEngine{
    const amt=p.stereo===2?(l?p.sideAmt:p.midAmt)/100:1;
    for(let k=0;k<K;k++){const r0=red[k>0?k-1:0],r2=red[k<K-1?k+1:K-1];const gr=(0.25*r0+0.5*red[k]+0.25*r2)*amt+ds*dsw[k];
     const g=Math.exp(-gr*0.1151292546);const gm=byp?1:del?mix*(1-g):1-mix+mix*g;gf[k]=gm;
-    const P=re[k]*re[k]+im[k]*im[k];Ein+=P;Eo+=P*gm*gm;
+    const P=(re[k]*re[k]+im[k]*im[k])*this.kwt[k];Ein+=P;Eo+=P*gm*gm;
     const pw=Math.pow(10,d[k]/10);ge+=pw*gr;pe+=pw;if(gr>gmax)gmax=gr;}}
-  /* auto gain: keep the loudness of the processed sound equal to the input, follows within about 10 ms */
+  /* auto gain: keep the loudness of the processed sound equal to the input (energy weighted like the ear: little bass, a bit more presence), follows within about 10 ms */
   if(p.autoGain&&!byp&&!del){if(10*Math.log10(Ein*sc2+1e-30)>-75){let t=10*Math.log10(Ein/(Eo+1e-30));t=t<0?0:t>12?12:t;this.mkDb+=(t-this.mkDb)*(1-(t>this.mkDb?this.mkC:this.mkD));}}
   else this.mkDb+=(0-this.mkDb)*(1-this.mkC);
   const mkL=Math.pow(10,this.mkDb/20);
@@ -388,9 +388,9 @@ const P={};for(const k in PD)if(!k.startsWith('n'))P[k]=PD[k].def;
 Object.assign(P,{mode:0,stereo:0,key:0,res:1,delta:0,bypass:0,freeze:0,autoGain:1});
 const defNodes=()=>[{type:1,f:120,g:0,q:1,on:1},{type:0,f:400,g:0,q:1,on:1},{type:0,f:1500,g:0,q:1,on:1},{type:0,f:4000,g:0,q:1,on:1},{type:0,f:8000,g:0,q:1,on:1},{type:2,f:12000,g:0,q:1,on:1}];
 let nodes=defNodes(),sel=3;
-const S={tips:true,look:'a',vis:1,power:0,view:0,showIn:1,showOut:1,peaks:1};
-try{Object.assign(S,JSON.parse(localStorage.getItem('softerpaws.settings')||'{}'));}catch(e){}
-const saveS=()=>{try{localStorage.setItem('softerpaws.settings',JSON.stringify(S));}catch(e){}};
+const S={tips:true,look:'b',vis:1,power:0,view:0,showIn:1,showOut:1,peaks:1};
+try{Object.assign(S,JSON.parse(localStorage.getItem('softerpaws.settings.v2')||'{}'));}catch(e){}
+const saveS=()=>{try{localStorage.setItem('softerpaws.settings.v2',JSON.stringify(S));}catch(e){}};
 
 /* ---------- presets ---------- */
 const mkP=(o,nm)=>({p:Object.assign({mode:0,depth:5,detail:50,attack:5,release:80,maxcut:18,mix:100,delta:0,bypass:0,tiltDetail:0,tiltAttack:0,tiltRelease:0,stereo:0,midAmt:100,sideAmt:100,key:0,res:1,inGain:0,outTrim:0,autoGain:1,dsAmt:0,dsFreq:5500},o),n:nm||defNodes()});
@@ -418,15 +418,17 @@ function loadPreset(key){const isU=key.startsWith('u:'),nm=key.slice(2),pr=isU?U
 const snap=()=>({p:Object.fromEntries(Object.entries(P).filter(([k])=>k!=='freeze')),n:nodes.map(o=>({...o}))});
 
 /* ---------- engine link ---------- */
-let ac=null,send=()=>{},running=false,playing=false;
+let ac=null,send=()=>{},running=false,playing=false,engMode='';
 function sendAll(){send({t:'all',p:{...P},nodes:nodes.map(o=>({...o}))});}
 const sendNodes=()=>send({t:'nodes',nodes:nodes.map(o=>({...o}))});
 async function initAudio(){if(ac)return;ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
  try{const code=CalmEngine.toString()+"\nclass CalmProc extends AudioWorkletProcessor{constructor(){super();this.e=new CalmEngine(sampleRate);this.e.post=d=>this.port.postMessage(d);this.port.onmessage=m=>this.e.msg(m.data);}process(i,o){const out=o[0];this.e.process(out[0],out[1]||out[0],out[0].length);return true;}}\nregisterProcessor('calm-proc',CalmProc);";
-  const url=URL.createObjectURL(new Blob([code],{type:'application/javascript'}));await ac.audioWorklet.addModule(url);
-  const nd=new AudioWorkletNode(ac,'calm-proc',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});nd.port.onmessage=m=>onEng(m.data);send=d=>nd.port.postMessage(d);nd.connect(ac.destination);}
- catch(err){const eng=new CalmEngine(ac.sampleRate);eng.post=d=>onEng(d);const sp=ac.createScriptProcessor(1024,1,2);sp.onaudioprocess=e=>{const b=e.outputBuffer;eng.process(b.getChannelData(0),b.getChannelData(1),b.length);};sp.connect(ac.destination);send=d=>eng.msg(d);}
- running=true;sendAll();setSource($('#src').value);setKey($('#ksrc').value);}
+  let loaded=false;for(const url of ['data:application/javascript;charset=utf-8,'+encodeURIComponent(code),URL.createObjectURL(new Blob([code],{type:'application/javascript'}))]){try{await ac.audioWorklet.addModule(url);loaded=true;break;}catch(e){}}
+  if(!loaded)throw new Error('worklet');
+  const nd=new AudioWorkletNode(ac,'calm-proc',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]});nd.port.onmessage=m=>onEng(m.data);send=d=>nd.port.postMessage(d);nd.connect(ac.destination);engMode='worklet';}
+ catch(err){const eng=new CalmEngine(ac.sampleRate);eng.post=d=>onEng(d);engMode='fallback';const sp=ac.createScriptProcessor(4096,1,2);sp.onaudioprocess=e=>{const b=e.outputBuffer;eng.process(b.getChannelData(0),b.getChannelData(1),b.length);};sp.connect(ac.destination);send=d=>eng.msg(d);}
+ running=true;sendAll();setSource($('#src').value);setKey($('#ksrc').value);
+ $('#rigmsg').textContent=engMode==='worklet'?'Audio engine: smooth (own audio thread)':'Audio engine: fallback on the page thread, may stutter in this browser';}
 
 /* ---------- test sounds ---------- */
 const cache={};
@@ -474,7 +476,7 @@ function buildKnobs(){for(const el of $$('.kn')){const id=el.dataset.k,d=PD[id];
  el.addEventListener('dblclick',()=>{setV(id,d.def);});
  el.addEventListener('wheel',e=>{e.preventDefault();setV(id,fromN(d,toN(d,getV(id))-Math.sign(e.deltaY)*(e.shiftKey?0.005:0.025)));},{passive:false});
  drawKnob(id);}}
-let CSSV={};const readVars=()=>{const cs=getComputedStyle(document.documentElement);for(const k of ['acc','good','sky','hot','pur','lav','title','yel','canvas','text','panel','sub'])CSSV[k]=cs.getPropertyValue('--'+k).trim();};
+let CSSV={};const readVars=()=>{const cs=getComputedStyle(document.documentElement);for(const k of ['acc','good','sky','hot','pur','lav','title','yel','canvas','text','panel','sub','dtop','glow'])CSSV[k]=cs.getPropertyValue('--'+k).trim();};
 const knobBody=()=>S.look==='c'?['#3d3d3d','#151515']:S.look==='b'?['#32333c','#121317']:['#3b3d78','#17183a'];
 function drawKnob(id){const k=knobs[id];if(!k)return;const d=PD[id],v=getV(id);k.kv.textContent=d.f(v);if(!k.cv)return;
  const res=Math.max(2,Math.ceil((window.devicePixelRatio||1)*scale)),px=k.sz*res;if(k.cv.width!==px){k.cv.width=px;k.cv.height=px;}
@@ -563,11 +565,13 @@ $('#bguide').onclick=()=>dlg('Guide',`<p>Softer Paws listens for sharp, ringing 
 <p>Display: mint is the input, sky is the output, pink is the reduction (scale on the right). Sparks fly where it cuts hardest.</p>
 <p class="k">Space play/stop · A auto gain · D delta · B bypass · F freeze · 1 2 3 views · Shift drag fine · double click default · wheel on a node changes Q · Alt click a node turns it off</p>`,[['Close']]);
 $('#bset').onclick=()=>dlg('Settings',`<p><label><input type="checkbox" id="stip" ${S.tips?'checked':''}> Info bubbles after hovering about one second</label></p>
-<p>Look <select class="sel" id="slook"><option value="a">A · Neon Navy</option><option value="b">B · Purple Soda Pop</option><option value="c">C · PurrOne</option></select></p>
+<p>Look <select class="sel" id="slook"><option value="b">Soda Pop (default)</option><option value="a">Neon Navy</option><option value="c">PurrOne</option></select></p>
 <p>Visuals <select class="sel" id="svis"><option value="0">Calm (no sparks)</option><option value="1">Pretty</option><option value="2">Max sparkle</option></select></p>
 <p><label><input type="checkbox" id="spow" ${S.power?'checked':''}> Power saving (30 frames per second)</label></p>
-<p style="color:#a8a4c8;font-size:14px">Drawing pauses when the window is hidden. Audio keeps running.</p>`,[['Done',()=>{S.tips=$('#stip').checked;S.look=$('#slook').value;S.vis=+$('#svis').value;S.power=$('#spow').checked?1:0;saveS();applyLook();}]]);
-$('#bset').addEventListener('click',()=>{setTimeout(()=>{$('#slook').value=S.look;$('#svis').value=S.vis;},0);});
+<p style="color:var(--muted);font-size:14px">Changes show right away. Drawing pauses when the window is hidden; audio keeps running.</p>`,[['Done',()=>{S.tips=$('#stip').checked;S.look=$('#slook').value;S.vis=+$('#svis').value;S.power=$('#spow').checked?1:0;saveS();applyLook();}]]);
+$('#bset').addEventListener('click',()=>{setTimeout(()=>{$('#slook').value=S.look;$('#svis').value=S.vis;
+  $('#slook').onchange=e=>{S.look=e.target.value;saveS();applyLook();};$('#svis').onchange=e=>{S.vis=+e.target.value;saveS();};
+  $('#stip').onchange=e=>{S.tips=e.target.checked;saveS();};$('#spow').onchange=e=>{S.power=e.target.checked?1:0;saveS();};},0);});
 $('#babout').onclick=()=>dlg('About & Support',`<p><b>Softer Paws</b> v1 design mockup · Studio 87</p><p>A dynamic resonance suppressor. Free and open source under AGPL-3.0-or-later. It collects nothing and makes no network calls.</p>
 <p>Presets are saved in your user data folder (Studio 87/Softer Paws/presets). The installer comes with an uninstaller that removes everything except your presets, unless you choose to delete them.</p>
 <p>If you like it, you can support the work on Ko-fi:</p><p><a href="https://ko-fi.com/studio87" style="color:#6CC9F5">ko-fi.com/studio87</a></p>`,[['Close']]);
@@ -612,9 +616,9 @@ function draw(now){requestAnimationFrame(draw);if(document.hidden)return;if(S.po
  if(!live){for(let b=0;b<B;b++){sIn[b]=Math.max(-120,sIn[b]-1.2);sOut[b]=Math.max(-120,sOut[b]-1.2);sRed[b]*=0.92;}}
  $('#hint').style.display=playing||live?'none':'block';
  /* background */
- const bg=c.createLinearGradient(0,0,0,Hh);bg.addColorStop(0,'#0a0820');bg.addColorStop(0.55,CSSV.canvas||'#05060d');bg.addColorStop(1,'#030409');c.fillStyle=bg;c.fillRect(0,0,W,Hh);
+ const bg=c.createLinearGradient(0,0,0,Hh);bg.addColorStop(0,CSSV.dtop||'#0a0820');bg.addColorStop(0.55,CSSV.canvas||'#05060d');bg.addColorStop(1,'#030409');c.fillStyle=bg;c.fillRect(0,0,W,Hh);
  let mb=0,mr=0;for(let b=0;b<B;b++)if(sRed[b]>mr){mr=sRed[b];mb=b;}
- if(mr>0.5){const gx=Xb(mb),gl=c.createRadialGradient(gx,PT,4,gx,PT,260);gl.addColorStop(0,`rgba(164,61,255,${Math.min(0.35,mr/40)})`);gl.addColorStop(1,'rgba(164,61,255,0)');c.fillStyle=gl;c.fillRect(0,0,W,Hh);}
+ if(mr>0.5){const gx=Xb(mb),gl=c.createRadialGradient(gx,PT,4,gx,PT,260);gl.addColorStop(0,`rgba(${CSSV.glow},${Math.min(0.3,mr/40)})`);gl.addColorStop(1,`rgba(${CSSV.glow},0)`);c.fillStyle=gl;c.fillRect(0,0,W,Hh);}
  const breath=0.5+0.5*Math.sin((now-t0)/1600);
  /* stars */ c.fillStyle='#ffffff';for(let i=0;i<60;i++){const sx=(i*977%1000)/1000*W,sy=PT+((i*613%1000)/1000)*(PB-PT)*0.5;c.globalAlpha=0.08+0.12*Math.abs(Math.sin(now/1300+i));c.fillRect(sx,sy,1.2,1.2);}c.globalAlpha=1;
  /* grid */
@@ -753,7 +757,7 @@ function refreshAll(){for(const id in knobs)drawKnob(id);for(const id in CH)draw
 readVars();applyLook();buildKnobs();buildChoices();fillPresets();fit();scale=base;applyScale();refreshAll();
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{for(const id in knobs)drawKnob(id);});
 requestAnimationFrame(draw);
-window.__calm={P,nodes:()=>nodes,S,onEng};
+window.__calm={P,nodes:()=>nodes,S,onEng,mode:()=>engMode};
 }
 </script>
 </body></html>
