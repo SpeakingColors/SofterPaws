@@ -189,7 +189,7 @@ footer{height:24px;flex:none;display:flex;align-items:center;justify-content:spa
     </div>
     <div id="meters" class="card"><canvas id="mcv"></canvas></div>
    </main>
-   <footer><span>Studio 87 · Softer Paws v2.1 design mockup</span><span id="size">1300 × 720 · 100%</span></footer>
+   <footer><span>Studio 87 · Softer Paws v2.2 design mockup</span><span id="size">1300 × 720 · 100%</span></footer>
   </div>
   <div class="cheek r" data-tip="Wood cheek. Double click to reset the window to 100%."></div>
  </div>
@@ -234,7 +234,7 @@ class CalmEngine{
   this.fifo=[mk(),mk()];this.acc=[mk(),mk()];this.kfifo=mk();this.outQ=[new Float32Array(H),new Float32Array(H)];this.fill=0;
   this.re=[new Float64Array(N),new Float64Array(N)];this.im=[new Float64Array(N),new Float64Array(N)];this.kre=new Float64Array(N);this.kim=new Float64Array(N);
   const mkK=()=>new Float32Array(K);
-  this.d=[mkK(),mkK()];this.dl=mkK();this.kd=mkK();this.red=[mkK(),mkK()];this.ds=[mkK().fill(-140),mkK().fill(-140)];{const hs=H/this.sr;this.su=Math.exp(-hs/0.015);this.sd=Math.exp(-hs/0.09);}this.gf=[mkK(),mkK()];this.wt=mkK();this.aA=mkK();this.aR=mkK();this.hw=new Int32Array(K);this.tmp=new Float32Array(K);this.pre=new Float64Array(K+1);this.oct=mkK();
+  this.d=[mkK(),mkK()];this.dl=mkK();this.kd=mkK();this.red=[mkK(),mkK()];this.ds=[mkK().fill(-140),mkK().fill(-140)];{const hs=H/this.sr;this.su=Math.exp(-hs/0.03);this.sd=Math.exp(-hs/0.12);}this.gf=[mkK(),mkK()];this.wt=mkK();this.aA=mkK();this.aR=mkK();this.hw=new Int32Array(K);this.tmp=new Float32Array(K);this.pre=new Float64Array(K+1);this.oct=mkK();
   for(let k=0;k<K;k++){const f=Math.max(1,k*this.sr/N);this.oct[k]=Math.max(-5,Math.min(5,Math.log2(f/1000)));}
   this.rev=new Uint32Array(N);const bits=Math.log2(N);for(let i=0;i<N;i++){let r=0;for(let b=0;b<bits;b++)r|=((i>>b)&1)<<(bits-1-b);this.rev[i]=r;}
   this.cs=new Float64Array(N>>1);this.sn=new Float64Array(N>>1);for(let k=0;k<N>>1;k++){this.cs[k]=Math.cos(2*Math.PI*k/N);this.sn[k]=Math.sin(2*Math.PI*k/N);}
@@ -249,8 +249,11 @@ class CalmEngine{
  updT(){const p=this.p,hs=this.H/this.sr;for(let k=0;k<this.K;k++){const o=this.oct[k];
   const ta=p.attack*Math.pow(2,-(p.tiltAttack/100)*o*0.5)/1000,tr=p.release*Math.pow(2,-(p.tiltRelease/100)*o*0.5)/1000;
   this.aA[k]=Math.exp(-hs/Math.max(1e-4,ta));this.aR[k]=Math.exp(-hs/Math.max(1e-4,tr));}}
- updD(){const p=this.p;let base=0.6*Math.pow(0.03/0.6,p.detail/100);if(p.mode===1)base*=1.5;
-  for(let k=0;k<this.K;k++){const fr=base*Math.pow(2,-(p.tiltDetail/100)*this.oct[k]*0.4);let h=Math.round(k*fr);if(h<1)h=1;if(h>this.K>>2)h=this.K>>2;this.hw[k]=h;}}
+ updD(){const p=this.p,K=this.K,bpH=this.N/this.sr,d=p.detail/100;
+  let fe=0.18*Math.pow(0.03/0.18,d),hz=500*Math.pow(120/500,d),fr=0.6*Math.pow(0.25/0.6,d);if(p.mode===1){fe*=1.3;fr*=1.2;}
+  if(!this.hwE||this.hwE.length!==K){this.hwE=new Int32Array(K);this.e1=new Float32Array(K);}
+  for(let k=0;k<K;k++){const tl=Math.pow(2,-(p.tiltDetail/100)*this.oct[k]*0.4);let h=Math.round(Math.max(k*fe*tl,hz*tl*bpH));if(h<1)h=1;if(h>K>>3)h=K>>3;this.hwE[k]=h;
+   let r=Math.round(Math.max(k*fr*tl,1.5*h));if(r<2)r=2;if(r>K>>2)r=K>>2;this.hw[k]=r;}}
  msg(d){
   if(d.t==='p'){const old=this.p[d.id];this.p[d.id]=d.v;
    if(d.id==='res'){const n=[512,2048,4096][d.v]||2048;if(n!==this.N)this.alloc(n);}
@@ -269,17 +272,23 @@ class CalmEngine{
   for(let size=2;size<=N;size<<=1){const half=size>>1,step=N/size;
    for(let i=0;i<N;i+=size){for(let j=0;j<half;j++){const k=j*step,wr=this.cs[k],wi=inv?this.sn[k]:-this.sn[k],a=i+j,b=a+half;
     const tr=re[b]*wr-im[b]*wi,ti=re[b]*wi+im[b]*wr;re[b]=re[a]-tr;im[b]=im[a]-ti;re[a]+=tr;im[a]+=ti;}}}}
- detect(raw,red,ds){const K=this.K,S=this.pre,p=this.p,det=ds,su=this.su,sd=this.sd;
+ detect(raw,red,ds){const K=this.K,S=this.pre,p=this.p,su=this.su,sd=this.sd,E=this.e1,tm=this.tmp,hE=this.hwE;
   for(let k=0;k<K;k++){const a=raw[k>0?k-1:0],b=raw[k],c=raw[k<K-1?k+1:K-1];const v=10*Math.log10((Math.pow(10,a/10)+2*Math.pow(10,b/10)+Math.pow(10,c/10))*0.25+1e-14);ds[k]=v>ds[k]?v+(ds[k]-v)*su:v+(ds[k]-v)*sd;}
-  const tm=this.tmp;S[0]=0;for(let k=0;k<K;k++)S[k+1]=S[k]+det[k];
-  for(let k=0;k<K;k++){const hw=this.hw[k];let a=k-hw,b=k+hw;if(a<0)a=0;if(b>K-1)b=K-1;const r1=(S[b+1]-S[a])/(b-a+1);tm[k]=det[k]<r1+1?det[k]:r1+1;}
+  /* spectral envelope: close the gaps between harmonics (sliding max then sliding min, so energy does not spread past the edges of the sound), then smooth it; single notes are not treated as resonances */
+  const t2=this.t2||(this.t2=new Float32Array(K));if(t2.length!==K)this.t2=new Float32Array(K);const T2=this.t2;
+  for(let k=0;k<K;k++){const h=hE[k];let a=k-h,b=k+h;if(a<0)a=0;if(b>K-1)b=K-1;let m=-300;for(let j=a;j<=b;j++)if(ds[j]>m)m=ds[j];tm[k]=m;}
+  for(let k=0;k<K;k++){const h=hE[k];let a=k-h,b=k+h;if(a<0)a=0;if(b>K-1)b=K-1;let m=300;for(let j=a;j<=b;j++)if(tm[j]<m)m=tm[j];T2[k]=m;}
+  for(let k=0;k<K;k++){E[k]=0.25*T2[k>0?k-1:0]+0.5*T2[k]+0.25*T2[k<K-1?k+1:K-1];}
+  /* reference: wide clipped mean of the envelope; a resonance is a bump of the envelope above it */
+  S[0]=0;for(let k=0;k<K;k++)S[k+1]=S[k]+E[k];
+  for(let k=0;k<K;k++){const hw=this.hw[k];let a=k-hw,b=k+hw;if(a<0)a=0;if(b>K-1)b=K-1;const r1=(S[b+1]-S[a])/(b-a+1);tm[k]=E[k]<r1+1?E[k]:r1+1;}
   S[0]=0;for(let k=0;k<K;k++)S[k+1]=S[k]+tm[k];
-  const hard=p.mode===1,amt=p.depth/10*(hard?1.4:1),mc=p.maxcut,t=hard?1.5:3,kn=4;
+  const hard=p.mode===1,amt=p.depth/6*(hard?1.4:1),mc=p.maxcut,t=hard?1:2,kn=4;
   for(let k=1;k<K;k++){const hw=this.hw[k];let a=k-hw,b=k+hw;if(a<1)a=1;if(b>K-1)b=K-1;
-   const ref=(S[b+1]-S[a])/(b-a+1),e=det[k]-ref;let o;
+   const ref=(S[b+1]-S[a])/(b-a+1),e=E[k]-ref;let o;
    if(e<=t-kn/2)o=0;else if(e<t+kn/2){const x=e-t+kn/2;o=x*x/(2*kn);}else o=e-t;
    let r=o*amt*this.wt[k];
-   if(hard){let lf=(det[k]+66)/30;lf=lf<0?0:lf>1.5?1.5:lf;r*=lf;}else if(det[k]<-96)r=0;
+   if(hard){let lf=(E[k]+66)/30;lf=lf<0?0:lf>1.5?1.5:lf;r*=lf;}else if(E[k]<-96)r=0;
    if(r>mc)r=mc;const c=red[k];red[k]=r>c?r+(c-r)*this.aA[k]:r+(c-r)*this.aR[k];}
   red[0]=0;}
  frame(){
@@ -300,10 +309,10 @@ class CalmEngine{
    for(let k=this.kS;k<=this.kHi;k++)Es+=Math.pow(10,a[k]/10)+Math.pow(10,b[k]/10);
    let t=(10*Math.log10((Es+1e-14)/(Eb+1e-14))+12);if(Es+Eb<1e-9)t=0;t=t<0?0:t>p.dsAmt?p.dsAmt:t;
    this.dsS=t>this.dsS?t:t+(this.dsS-t)*this.dsR;}else if(p.dsAmt<=0)this.dsS=0;
-  const mix=p.mix/100,del=p.delta,byp=p.bypass,ds=this.dsS,dsw=this.dsw;let ge=0,pe=0,gmax=0,Ein=0,Eo=0;
+  const mix=p.mix/100,del=p.delta,byp=p.bypass,ds=this.dsS,dsw=this.dsw;const fs=this.fsP&&this.fsP.length===K+1?this.fsP:(this.fsP=new Float64Array(K+1));let ge=0,pe=0,gmax=0,Ein=0,Eo=0;
   for(let l=0;l<2;l++){const red=this.red[l],re=this.re[l],im=this.im[l],gf=this.gf[l],d=this.d[l];
    const amt=p.stereo===2?(l?p.sideAmt:p.midAmt)/100:1;
-   for(let k=0;k<K;k++){const r0=red[k>0?k-1:0],r2=red[k<K-1?k+1:K-1];const gr=(0.25*r0+0.5*red[k]+0.25*r2)*amt+ds*dsw[k];
+   for(let k=0;k<K;k++){/* cuts smoothed across about 1/12 octave so they glide instead of jumping between neighbouring bins */if(k===0){fs[0]=0;for(let j=0;j<K;j++)fs[j+1]=fs[j]+red[j];}let hw=Math.round(k*0.03);if(hw<1)hw=1;let a=k-hw,b=k+hw;if(a<0)a=0;if(b>K-1)b=K-1;const gr=(fs[b+1]-fs[a])/(b-a+1)*amt+ds*dsw[k];
     const g=Math.exp(-gr*0.1151292546);const gm=byp?1:del?mix*(1-g):1-mix+mix*g;gf[k]=gm;
     const P=(re[k]*re[k]+im[k]*im[k])*this.kwt[k];Ein+=P;Eo+=P*gm*gm;
     const pw=Math.pow(10,d[k]/10);ge+=pw*gr;pe+=pw;if(gr>gmax)gmax=gr;}}
@@ -386,7 +395,7 @@ const TYPES=['Bell','Low shelf','High shelf','Low cut','High cut','Band pass','N
 const GAINTYPES=new Set([0,1,2,7]);
 const P={};for(const k in PD)if(!k.startsWith('n'))P[k]=PD[k].def;
 Object.assign(P,{mode:0,stereo:0,key:0,res:1,delta:0,bypass:0,freeze:0,autoGain:1});
-const defNodes=()=>[{type:1,f:120,g:0,q:1,on:1},{type:0,f:400,g:0,q:1,on:1},{type:0,f:1500,g:0,q:1,on:1},{type:0,f:4000,g:0,q:1,on:1},{type:0,f:8000,g:0,q:1,on:1},{type:2,f:12000,g:0,q:1,on:1}];
+const defNodes=()=>[{type:3,f:120,g:0,q:1,on:1},{type:0,f:400,g:0,q:1,on:1},{type:0,f:1500,g:0,q:1,on:1},{type:0,f:4000,g:0,q:1,on:1},{type:0,f:8000,g:0,q:1,on:1},{type:2,f:12000,g:0,q:1,on:1}];
 let nodes=defNodes(),sel=3;
 const S={tips:true,look:'b',vis:1,power:0,view:0,showIn:1,showOut:1,peaks:1};
 try{Object.assign(S,JSON.parse(localStorage.getItem('softerpaws.settings.v2')||'{}'));}catch(e){}
