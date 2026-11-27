@@ -15,7 +15,7 @@ Design stage. There is no plugin to download yet. The interactive mockup in `doc
 - Up to 8 sensitivity nodes (Bell, Low shelf, High shelf, Low cut, High cut, Band pass, Notch, Tilt) to steer where it works.
 - Built-in de-esser for S, T and SH sounds.
 - Auto gain keeps the processed sound as loud as the input, so you judge tone, not level.
-- Delta (hear only what is removed), Mix, stereo Linked, Unlinked or Mid/Side, external key input.
+- Delta (hear only what is removed), Mix, stereo Linked, Unlinked or Mid/Side, external key (sidechain) input with Gain, Low cut, High cut and Listen to key, so a kick can duck a bass or a vocal can make room in a lead.
 - Big live display: spectrum with the cuts, waterfall, heat map, and labels with note, frequency, cut and Q of the strongest resonances.
 
 ## Licence

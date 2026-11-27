@@ -7,7 +7,6 @@
 @font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/barlow-condensed-latin-700-normal.woff2) format('woff2')}
 @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jetbrains-mono-latin-500-normal.woff2) format('woff2')}
 @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/jetbrains-mono-latin-700-normal.woff2) format('woff2')}
-
 /* VOICE: studio tool, calm and exact, playful cat touches
    IDEA: a glowing night sky over the spectrum where every cut leaves a trail
    PICTURE: the big display, aurora of cuts, sparks, waterfall and heat views
@@ -182,14 +181,14 @@ footer{height:24px;flex:none;display:flex;align-items:center;justify-content:spa
     <div id="side">
      <button class="btn" id="sidebtn" data-tip="Show or hide the side panel with the advanced controls.">&#9654; Advanced</button>
      <div class="sec card"><h4>Tilt</h4><div class="row"><div class="kn sm" data-k="tiltDetail"></div><div class="kn sm" data-k="tiltAttack"></div><div class="kn sm" data-k="tiltRelease"></div></div></div>
-     <div class="sec card"><h4>Stereo</h4><div class="seg" data-c="stereo"></div><div class="row" style="margin-top:4px"><div class="kn sm" data-k="midAmt"></div><div class="kn sm" data-k="sideAmt"></div></div></div>
+     <div class="sec card"><h4>Stereo</h4><div class="seg" data-c="stereo"></div><div class="row" id="msrow" style="margin-top:4px"><div class="kn sm" data-k="midAmt"></div><div class="kn sm" data-k="sideAmt"></div></div></div>
      <div class="sec card"><h4>De-ess <small id="dsnow">off</small></h4><div class="row"><div class="kn sm" data-k="dsAmt"></div><div class="kn sm" data-k="dsFreq"></div></div></div>
-     <div class="sec card"><h4>Key input <small id="keynote">own input</small></h4><div class="seg" data-c="key"></div><h4 style="margin-top:6px">Resolution <small id="latnote">42.7 ms</small></h4><div class="seg" data-c="res"></div></div>
+     <div class="sec card"><h4>Key input <small id="keynote">own input</small></h4><div class="seg" data-c="key"></div><div class="row" id="keyrow" style="margin-top:4px"><div class="kn sm" data-k="keyGain"></div><div class="kn sm" data-k="keyLo"></div><div class="kn sm" data-k="keyHi"></div></div><button class="btn" id="bklisten" style="width:100%;margin-top:4px" data-tip="Listen to the key: hear the sound that Softer Paws is using as the key, after the same delay as the main sound, so you can set Gain, Low cut and High cut by ear. Only works when Key input is External. Switch it off again to hear the result.">&#127911; Listen to key</button><h4 style="margin-top:6px">Resolution <small id="latnote">42.7 ms</small></h4><div class="seg" data-c="res"></div></div>
      <div class="sec card" id="cuts" data-tip="Top cuts right now: note, frequency, how much is cut in dB, and the width of each cut (Q)."><h4>Top cuts <small>dB · Q</small></h4><div id="cutlist"></div></div>
     </div>
     <div id="meters" class="card"><canvas id="mcv"></canvas></div>
    </main>
-   <footer><span>Studio 87 · Softer Paws v2.2 design mockup</span><span id="size">1300 × 720 · 100%</span></footer>
+   <footer><span>Studio 87 · Softer Paws v2.3 design mockup</span><span id="size">1300 × 720 · 100%</span></footer>
   </div>
   <div class="cheek r" data-tip="Wood cheek. Double click to reset the window to 100%."></div>
  </div>
@@ -211,7 +210,7 @@ footer{height:24px;flex:none;display:flex;align-items:center;justify-content:spa
 class CalmEngine{
  constructor(sr){
   this.sr=sr;this.post=null;
-  this.p={mode:0,depth:5,detail:50,attack:5,release:80,maxcut:18,mix:100,delta:0,bypass:0,tiltDetail:0,tiltAttack:0,tiltRelease:0,stereo:0,midAmt:100,sideAmt:100,key:0,res:1,inGain:0,outTrim:0,freeze:0,autoGain:1,dsAmt:0,dsFreq:5500};this.mkDb=0;this.dsS=0;
+  this.p={mode:0,depth:5,detail:50,attack:5,release:80,maxcut:18,mix:100,delta:0,bypass:0,tiltDetail:0,tiltAttack:0,tiltRelease:0,stereo:0,midAmt:100,sideAmt:100,key:0,keyGain:0,keyLo:20,keyHi:20000,keyListen:0,res:1,inGain:0,outTrim:0,freeze:0,autoGain:1,dsAmt:0,dsFreq:5500};this.krb=new Float32Array(16384);this.kw=0;this.kfSig='';this.kfw=null;this.mkDb=0;this.dsS=0;
   this.nodes=[];this.srcL=null;this.srcR=null;this.pos=0;this.keyBuf=null;this.playing=false;
   this.B=220;this.dIn=new Float32Array(this.B);this.dOut=new Float32Array(this.B);this.dRed=new Float32Array(this.B);this.dKey=new Float32Array(this.B);
   this.pkIn=[0,0];this.pkOut=[0,0];this.grAvg=0;this.grMax=0;this.since=0;
@@ -267,6 +266,11 @@ class CalmEngine{
   else if(d.t==='key'){this.keyBuf=d.K;}
   else if(d.t==='play'){this.playing=d.on;if(d.on)this.pos=0;}
  }
+ keyShape(){/* key gain and key filter (12 dB per octave outside the band): changes only what the detector sees, never the sound */
+  const p=this.p,K=this.K,N=this.N,sr=this.sr,sig=p.keyLo+'|'+p.keyHi+'|'+N+'|'+sr;
+  if(sig!==this.kfSig||!this.kfw||this.kfw.length!==K){this.kfSig=sig;const w=this.kfw=new Float32Array(K);
+   for(let k=0;k<K;k++){const f=Math.max(1,k*sr/N);let d=0;if(p.keyLo>20.5&&f<p.keyLo)d-=12*Math.log2(p.keyLo/f);if(p.keyHi<19500&&f>p.keyHi)d-=12*Math.log2(f/p.keyHi);w[k]=d<-60?-60:d;}}
+  const g=p.keyGain,w=this.kfw,kd=this.kd;for(let k=0;k<K;k++)kd[k]+=g+w[k];}
  fft(re,im,inv){const N=this.N,rv=this.rev;
   for(let i=0;i<N;i++){const j=rv[i];if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
   for(let size=2;size<=N;size<<=1){const half=size>>1,step=N/size;
@@ -297,7 +301,7 @@ class CalmEngine{
    for(let i=0;i<N;i++){re[i]=f[i]*w[i];im[i]=0;}this.fft(re,im,false);f.copyWithin(0,H);
    for(let k=0;k<K;k++)d[k]=10*Math.log10((re[k]*re[k]+im[k]*im[k])*sc2+1e-14);}
   const ext=p.key===1;
-  {const f=this.kfifo,re=this.kre,im=this.kim;if(ext){for(let i=0;i<N;i++){re[i]=f[i]*w[i];im[i]=0;}this.fft(re,im,false);for(let k=0;k<K;k++)this.kd[k]=10*Math.log10((re[k]*re[k]+im[k]*im[k])*sc2+1e-14);}f.copyWithin(0,H);}
+  {const f=this.kfifo,re=this.kre,im=this.kim;if(ext){for(let i=0;i<N;i++){re[i]=f[i]*w[i];im[i]=0;}this.fft(re,im,false);for(let k=0;k<K;k++)this.kd[k]=10*Math.log10((re[k]*re[k]+im[k]*im[k])*sc2+1e-14);this.keyShape();}f.copyWithin(0,H);}
   let A,Bd;
   if(ext){A=Bd=this.kd;}
   else if(p.stereo===0){const a=this.d[0],b=this.d[1],o=this.dl;for(let k=0;k<K;k++)o[k]=10*Math.log10(0.5*(Math.pow(10,a[k]/10)+Math.pow(10,b[k]/10))+1e-14);A=Bd=o;}
@@ -350,10 +354,11 @@ class CalmEngine{
    if(this.playing&&len){l=sL[this.pos];r=sR[this.pos];if(kl)k=kb[this.pos%kl];this.pos++;if(this.pos>=len)this.pos=0;}
    l*=gi;r*=gi;const al=Math.abs(l),ar=Math.abs(r);if(al>this.pkIn[0])this.pkIn[0]=al;if(ar>this.pkIn[1])this.pkIn[1]=ar;
    let a=l,b=r;if(ms){a=(l+r)*0.5;b=(l-r)*0.5;}
-   const j=N-H+this.fill;this.fifo[0][j]=a;this.fifo[1][j]=b;this.kfifo[j]=k;
+   const j=N-H+this.fill;this.fifo[0][j]=a;this.fifo[1][j]=b;this.kfifo[j]=k;this.krb[this.kw&16383]=k;this.kw++;
    let oa=this.outQ[0][this.fill],ob=this.outQ[1][this.fill];this.fill++;
    if(this.fill>=H){this.frame();this.fill=0;}
    if(ms){l=oa+ob;r=oa-ob;}else{l=oa;r=ob;}
+   if(p.keyListen&&p.key===1){const kk=this.krb[(this.kw-1-N)&16383]*gi;l=kk;r=kk;}/* listen to the key: delayed like the main path */
    l*=go;r*=go;if(!(l===l))l=0;if(!(r===r))r=0;
    oL[i]=l;oR[i]=r;const bl=Math.abs(l),br=Math.abs(r);if(bl>this.pkOut[0])this.pkOut[0]=bl;if(br>this.pkOut[1])this.pkOut[1]=br;}
  }
@@ -384,6 +389,9 @@ const PD={
  ng:{min:-12,max:12,def:0,bip:1,f:db,lab:'Sens',tip:'Sensitivity of the selected node. Up: work harder here. Down: leave this range alone.'},
  nq:{min:0.2,max:8,def:1,log:1,f:v=>v.toFixed(2),lab:'Q',tip:'Width of the selected node. Higher is narrower. Mouse wheel on a node does the same.'},
  dsAmt:{min:0,max:12,def:0,f:v=>v<0.05?'Off':'-'+v.toFixed(1)+' dB',lab:'Amount',tip:'De-ess amount: the most the esses (S, T, SH sounds) are turned down. It only acts when the band above Freq gets as loud as the body of the sound below it, so vowels stay untouched. 0 = off.'},
+ keyGain:{min:-24,max:24,def:0,bip:1,f:db,lab:'Gain',tip:'Key gain: makes the key louder or quieter for detection only. A louder key makes Softer Paws duck more. It never changes the key sound you hear.'},
+ keyLo:{min:20,max:2000,def:20,log:1,f:v=>v<=20.5?'Off':hz(v),lab:'Low cut',tip:'Key low cut: the key is ignored below this frequency (12 dB per octave). Use it so a kick key does not duck frequencies you want to keep.'},
+ keyHi:{min:1000,max:20000,def:20000,log:1,f:v=>v>=19500?'Off':hz(v),lab:'High cut',tip:'Key high cut: the key is ignored above this frequency (12 dB per octave). Use it to let only the low part of a kick duck the bass.'},
  dsFreq:{min:3000,max:12000,def:5500,log:1,f:hz,lab:'Freq',tip:'De-ess frequency: where the ess band starts. Around 5 to 7 kHz for most voices, lower for deep voices. You can also drag the S handle on the display.'}
 };
 const CH={mode:['Soft','Hard'],stereo:['Linked','Unlinked','Mid/Side'],key:['Internal','External'],res:['Low lat','Normal','Hi res']};
@@ -394,7 +402,7 @@ const CHT={mode:'Soft: adaptive threshold, the most transparent; it follows the 
 const TYPES=['Bell','Low shelf','High shelf','Low cut','High cut','Band pass','Notch','Tilt'];
 const GAINTYPES=new Set([0,1,2,7]);
 const P={};for(const k in PD)if(!k.startsWith('n'))P[k]=PD[k].def;
-Object.assign(P,{mode:0,stereo:0,key:0,res:1,delta:0,bypass:0,freeze:0,autoGain:1});
+Object.assign(P,{mode:0,stereo:0,key:0,res:1,delta:0,bypass:0,freeze:0,autoGain:1,keyListen:0});
 const defNodes=()=>[{type:3,f:120,g:0,q:1,on:1},{type:0,f:400,g:0,q:1,on:1},{type:0,f:1500,g:0,q:1,on:1},{type:0,f:4000,g:0,q:1,on:1},{type:0,f:8000,g:0,q:1,on:1},{type:2,f:12000,g:0,q:1,on:1}];
 let nodes=defNodes(),sel=3;
 const S={tips:true,look:'b',vis:1,power:0,view:0,showIn:1,showOut:1,peaks:1};
@@ -402,7 +410,7 @@ try{Object.assign(S,JSON.parse(localStorage.getItem('softerpaws.settings.v2')||'
 const saveS=()=>{try{localStorage.setItem('softerpaws.settings.v2',JSON.stringify(S));}catch(e){}};
 
 /* ---------- presets ---------- */
-const mkP=(o,nm)=>({p:Object.assign({mode:0,depth:5,detail:50,attack:5,release:80,maxcut:18,mix:100,delta:0,bypass:0,tiltDetail:0,tiltAttack:0,tiltRelease:0,stereo:0,midAmt:100,sideAmt:100,key:0,res:1,inGain:0,outTrim:0,autoGain:1,dsAmt:0,dsFreq:5500},o),n:nm||defNodes()});
+const mkP=(o,nm)=>({p:Object.assign({mode:0,depth:5,detail:50,attack:5,release:80,maxcut:18,mix:100,delta:0,bypass:0,tiltDetail:0,tiltAttack:0,tiltRelease:0,stereo:0,midAmt:100,sideAmt:100,key:0,keyGain:0,keyLo:20,keyHi:20000,res:1,inGain:0,outTrim:0,autoGain:1,dsAmt:0,dsFreq:5500},o),n:nm||defNodes()});
 const nn=(arr)=>arr.map(a=>({type:a[0],f:a[1],g:a[2],q:a[3]??1,on:1}));
 const FACT={
  'Default':mkP({}),
@@ -414,6 +422,8 @@ const FACT={
  'Kick Ring Control':mkP({mode:1,depth:8,detail:75,attack:12,release:150,tiltAttack:-40},nn([[5,140,0,0.8],[0,60,-3],[0,180,3],[0,400,0],[0,4000,0],[2,12000,0]])),
  'Master Gentle':mkP({depth:3,detail:35,attack:20,release:250,maxcut:6,mix:80,stereo:2,sideAmt:60},nn([[1,100,-6],[0,400,0],[0,1500,0],[0,3500,2],[0,8000,0],[2,14000,0]])),
  'Sidechain Space':mkP({mode:1,depth:12,detail:30,attack:5,release:120,key:1}),
+ 'Kick Ducks Bass':mkP({mode:1,depth:14,detail:20,attack:2,release:110,key:1,keyLo:40,keyHi:220,maxcut:20}),
+ 'Vocal Makes Room':mkP({mode:0,depth:8,detail:40,attack:6,release:120,key:1,keyLo:200,keyHi:6000,maxcut:10}),
  'De-ess Vocal':mkP({depth:3,detail:60,dsAmt:8,dsFreq:5500}),
  'Resonance Isolate':mkP({depth:10,detail:85,delta:1})
 };
@@ -423,8 +433,8 @@ let cur='Default';
 function fillPresets(){const s=$('#pname');s.innerHTML='<optgroup label="Factory">'+Object.keys(FACT).map(n=>`<option value="f:${n}">${n}</option>`).join('')+'</optgroup>'+(Object.keys(USER).length?'<optgroup label="Your presets">'+Object.keys(USER).map(n=>`<option value="u:${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>':'');s.value=(USER[cur]?'u:':'f:')+cur;}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function loadPreset(key){const isU=key.startsWith('u:'),nm=key.slice(2),pr=isU?USER[nm]:FACT[nm];if(!pr)return;cur=nm;
- Object.assign(P,pr.p);P.freeze=0;nodes=pr.n.map(o=>({...o}));sel=Math.min(sel,nodes.length-1);sendAll();refreshAll();fillPresets();}
-const snap=()=>({p:Object.fromEntries(Object.entries(P).filter(([k])=>k!=='freeze')),n:nodes.map(o=>({...o}))});
+ P.keyGain=0;P.keyLo=20;P.keyHi=20000;Object.assign(P,pr.p);P.freeze=0;P.keyListen=0;nodes=pr.n.map(o=>({...o}));sel=Math.min(sel,nodes.length-1);sendAll();refreshAll();fillPresets();}
+const snap=()=>({p:Object.fromEntries(Object.entries(P).filter(([k])=>k!=='freeze'&&k!=='keyListen')),n:nodes.map(o=>({...o}))});
 
 /* ---------- engine link ---------- */
 let ac=null,send=()=>{},running=false,playing=false,engMode='';
@@ -511,16 +521,16 @@ function makeWood(right){const W=60,H=1440,cv=document.createElement('canvas');c
  x.restore();return cv.toDataURL();}
 for(const ch of $$('.cheek'))ch.style.backgroundImage=`url(${makeWood(ch.classList.contains('r'))})`;
 function buildChoices(){for(const el of $$('[data-c]')){const id=el.dataset.c;el.dataset.tip=CHT[id];el.innerHTML=CH[id].map((t,i)=>`<button class="btn" data-i="${i}">${t}</button>`).join('');
- el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P[id]=+b.dataset.i;send({t:'p',id,v:P[id]});drawChoice(id);sideNotes();});drawChoice(id);}}
+ el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P[id]=+b.dataset.i;send({t:'p',id,v:P[id]});drawChoice(id);toggles();sideNotes();});drawChoice(id);}}
 const drawChoice=id=>{for(const b of $$(`[data-c="${id}"] button`))b.classList.toggle('on',+b.dataset.i===P[id]);};
 function sideNotes(){const N=[512,2048,4096][P.res],sr=ac?ac.sampleRate:48000;$('#latnote').textContent=`${(N/sr*1000).toFixed(1)} ms`;
  $('#keynote').textContent=P.key?'key: '+$('#ksrc').selectedOptions[0].text:'own input';
- for(const id of ['midAmt','sideAmt'])knobs[id].el.style.opacity=P.stereo===2?1:0.35;}
-function toggles(){$('#bauto').classList.toggle('goodOn',!!P.autoGain);$('#bdelta').classList.toggle('hotOn',!!P.delta);$('#bbyp').classList.toggle('hotOn',!!P.bypass);$('#tfrz').classList.toggle('on',!!P.freeze);
+ $('#msrow').style.display=P.stereo===2?'':'none';}
+function toggles(){$('#bauto').classList.toggle('goodOn',!!P.autoGain);$('#bklisten').classList.toggle('hotOn',!!P.keyListen);$('#bklisten').style.opacity=P.key?1:0.5;$('#bdelta').classList.toggle('hotOn',!!P.delta);$('#bbyp').classList.toggle('hotOn',!!P.bypass);$('#tfrz').classList.toggle('on',!!P.freeze);
  $('#tin').classList.toggle('on',!!S.showIn);$('#tout').classList.toggle('on',!!S.showOut);$('#tpk').classList.toggle('on',!!S.peaks);
  for(const t of $$('#tabs .tab'))t.classList.toggle('on',+t.dataset.view===S.view);}
 const tgl=(id)=>{P[id]=P[id]?0:1;send({t:'p',id,v:P[id]});toggles();};
-$('#bauto').onclick=()=>tgl('autoGain');$('#bdelta').onclick=()=>tgl('delta');$('#bbyp').onclick=()=>tgl('bypass');$('#tfrz').onclick=()=>tgl('freeze');
+$('#bklisten').onclick=()=>{if(!P.key)return;tgl('keyListen');};$('#bauto').onclick=()=>tgl('autoGain');$('#bdelta').onclick=()=>tgl('delta');$('#bbyp').onclick=()=>tgl('bypass');$('#tfrz').onclick=()=>tgl('freeze');
 $('#tin').onclick=()=>{S.showIn^=1;saveS();toggles();};$('#tout').onclick=()=>{S.showOut^=1;saveS();toggles();};$('#tpk').onclick=()=>{S.peaks^=1;saveS();toggles();};
 for(const t of $$('#tabs .tab'))t.onclick=()=>{S.view=+t.dataset.view;saveS();toggles();};
 $('#sidebtn').onclick=()=>{const s=$('#side');s.classList.toggle('closed');$('#sidebtn').innerHTML=s.classList.contains('closed')?'&#9664;':'&#9654; Advanced';};
@@ -567,7 +577,7 @@ $('#pimp').onclick=()=>{dlg('Import preset','<textarea id="dtxt" placeholder="Pa
   const n=o.n.map(x=>({type:Math.max(0,Math.min(7,Math.round(+x.type||0))),f:Math.max(20,Math.min(20000,+x.f||1000)),g:Math.max(-12,Math.min(12,+x.g||0)),q:Math.max(0.2,Math.min(8,+x.q||1)),on:x.on?1:0}));
   let nm=String(o.name||'Imported').slice(0,40);while(USER[nm]||FACT[nm])nm+=' +';USER[nm]=mkP(p,n);saveU();loadPreset('u:'+nm);}
  catch(e){$('#derr').textContent='Could not import: '+(typeof e==='string'?e:'the text is not valid');return true;}}]]);};
-$('#bguide').onclick=()=>dlg('Guide',`<p>Softer Paws listens for sharp, ringing frequencies (resonances) and turns them down only while they ring. Everything else stays as it is.</p>
+$('#bguide').onclick=()=>dlg('Guide',`<p>Softer Paws listens for sharp, ringing frequencies (resonances) and turns them down only while they ring. Everything else stays as it is.</p><p><b>Sidechain:</b> set Key input to External and send another track to the key input. Softer Paws then turns down your sound only where that key is busy, for example a kick ducking a bass or a vocal making room in a lead. Gain, Low cut and High cut shape what it listens to; Listen to key lets you hear it.</p>
 <ol><li>Press Play in the preview rig, or load your own file.</li><li>Raise <b>Depth</b> until the harshness calms down. Use <b>Delta</b> to hear what is removed: it should sound like the harsh part, not the music.</li>
 <li>Set <b>Detail</b>: high for narrow whistles and ringing, low for broad build-ups.</li><li>Drag the amber nodes: up means work harder there, down means leave it alone. Cuts, Band pass and Notch decide where it may work at all.</li>
 <li>Use <b>Attack</b> to keep transients, <b>Release</b> for smoothness.</li><li>For vocals, raise <b>De-ess Amount</b> and set its <b>Freq</b> where the esses start (drag the S handle on the display).</li><li>Keep <b>Auto gain</b> on to compare tone at equal loudness.</li></ol>
